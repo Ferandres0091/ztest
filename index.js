@@ -13,11 +13,15 @@ const { testSSL } = require('./src/tests/sslTests');
 const { testSecurityHeaders, testCookieSecurity, testCORS } = require('./src/tests/securityTests');
 const { testWithBrowser, testPerformance } = require('./src/tests/browserTests');
 const { testResponsive, takeScreenshots } = require('./src/tests/responsiveTests');
+const { testSEO } = require('./src/tests/seoTests');
+const { testAccessibility } = require('./src/tests/accessibilityTests');
+const { testWebVitals } = require('./src/tests/webVitalsTests');
+const { testLighthouse } = require('./src/tests/lighthouseTests');
 const Reporter = require('./src/reporter');
 const Logger = require('./src/logger');
 const LinearClient = require('./src/linearClient');
 
-const VERSION = '1.0.0';
+const VERSION = '2.0.0';
 
 // Banner
 function showBanner() {
@@ -68,6 +72,26 @@ const TEST_CATEGORIES = {
     name: '📱 Responsive',
     description: 'Mobile, tablet, desktop - diseño adaptativo',
     tests: [testResponsive, takeScreenshots]
+  },
+  seo: {
+    name: '🔍 SEO',
+    description: 'Meta tags, Open Graph, Schema.org, sitemap',
+    tests: [testSEO]
+  },
+  accessibility: {
+    name: '♿ Accesibilidad',
+    description: 'WCAG 2.1, ARIA, contraste, navegación',
+    tests: [testAccessibility]
+  },
+  vitals: {
+    name: '📊 Core Web Vitals',
+    description: 'LCP, FID, CLS - métricas de Google',
+    tests: [testWebVitals]
+  },
+  lighthouse: {
+    name: '🔥 Lighthouse',
+    description: 'Auditoría completa con scores',
+    tests: [testLighthouse]
   }
 };
 
