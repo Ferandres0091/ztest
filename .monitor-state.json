@@ -1,0 +1,19 @@
+{
+  "lastCheck": "2026-02-14T22:50:58.369Z",
+  "alerts": {},
+  "history": [
+    {
+      "timestamp": "2026-02-14T22:50:58.369Z",
+      "results": [
+        {
+          "url": "https://www.horneross.com/",
+          "status": "ok"
+        },
+        {
+          "url": "https://app.horneross.com/",
+          "status": "ok"
+        }
+      ]
+    }
+  ]
+}

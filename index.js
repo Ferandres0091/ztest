@@ -20,6 +20,7 @@ const { testLighthouse } = require('./src/tests/lighthouseTests');
 const Reporter = require('./src/reporter');
 const Logger = require('./src/logger');
 const LinearClient = require('./src/linearClient');
+const Monitor = require('./src/monitor');
 
 const VERSION = '2.0.0';
 
@@ -484,6 +485,141 @@ program
     } catch (error) {
       spinner.fail('Error conectando');
       console.log(chalk.red(`\nError: ${error.message}\n`));
+    }
+  });
+
+// Monitor commands
+program
+  .command('monitor')
+  .description('Ejecutar monitoreo y enviar alertas si hay problemas')
+  .option('-v, --verbose', 'Mostrar detalles')
+  .action(async (options) => {
+    showBanner();
+    const monitor = new Monitor();
+    const status = monitor.getStatus();
+
+    if (!status.configured) {
+      console.log(chalk.yellow('\n⚠ Monitor no configurado.'));
+      console.log(chalk.gray('Ejecuta: node index.js monitor-setup\n'));
+      return;
+    }
+
+    console.log(chalk.bold('\n🔍 ZTEST Monitor\n'));
+    const { results, alerts } = await monitor.monitor(true);
+
+    if (alerts.length > 0) {
+      console.log(chalk.green(`\n📨 ${alerts.length} alerta(s) enviada(s) a Linear (asignadas a Gonzalo)\n`));
+    }
+  });
+
+program
+  .command('monitor-setup')
+  .description('Configurar el monitor de alertas')
+  .action(async () => {
+    showBanner();
+    console.log(chalk.bold('\n🔧 Configuración del Monitor\n'));
+
+    const monitor = new Monitor();
+    const linear = new LinearClient();
+
+    if (!linear.isConfigured()) {
+      console.log(chalk.red('✗ Primero configura Linear: node index.js linear-setup\n'));
+      return;
+    }
+
+    const teams = await linear.getTeams();
+
+    const answers = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'urls',
+        message: 'URLs a monitorear (separadas por coma):',
+        validate: (input) => input.length > 0 ? true : 'Ingresa al menos una URL'
+      },
+      {
+        type: 'list',
+        name: 'team',
+        message: 'Equipo para las alertas:',
+        choices: teams.map(t => ({ name: `${t.name} (${t.key})`, value: t.id }))
+      },
+      {
+        type: 'input',
+        name: 'responseTime',
+        message: 'Umbral de tiempo de respuesta (ms):',
+        default: '5000'
+      },
+      {
+        type: 'input',
+        name: 'sslDays',
+        message: 'Alertar si SSL expira en menos de (días):',
+        default: '14'
+      }
+    ]);
+
+    // Parse URLs
+    const urls = answers.urls.split(',').map(u => u.trim()).filter(u => u);
+    urls.forEach(url => monitor.addUrl(url));
+
+    monitor.setTeam(answers.team);
+    monitor.config.thresholds.responseTime = parseInt(answers.responseTime);
+    monitor.config.thresholds.sslExpiryDays = parseInt(answers.sslDays);
+    monitor.saveConfig();
+
+    console.log(chalk.green('\n✓ Monitor configurado:'));
+    console.log(chalk.cyan(`  URLs: ${urls.join(', ')}`));
+    console.log(chalk.cyan(`  Alertas asignadas a: Gonzalo Arrayaran`));
+    console.log(chalk.cyan(`  Umbral respuesta: ${answers.responseTime}ms`));
+    console.log(chalk.cyan(`  Alerta SSL: ${answers.sslDays} días`));
+    console.log(chalk.gray('\nEjecuta "node index.js monitor" para verificar\n'));
+  });
+
+program
+  .command('monitor-status')
+  .description('Ver estado del monitor')
+  .action(() => {
+    showBanner();
+    const monitor = new Monitor();
+    const status = monitor.getStatus();
+
+    console.log(chalk.bold('\n📊 Estado del Monitor\n'));
+
+    if (!status.configured) {
+      console.log(chalk.yellow('⚠ No configurado\n'));
+      console.log(chalk.gray('Ejecuta: node index.js monitor-setup\n'));
+      return;
+    }
+
+    console.log(chalk.white('URLs monitoreadas:'));
+    status.urls.forEach(url => console.log(chalk.cyan(`  - ${url}`)));
+
+    console.log(chalk.white('\nConfiguración:'));
+    console.log(chalk.gray(`  Umbral respuesta: ${status.thresholds.responseTime}ms`));
+    console.log(chalk.gray(`  Alerta SSL: ${status.thresholds.sslExpiryDays} días`));
+    console.log(chalk.gray(`  Último chequeo: ${status.lastCheck || 'Nunca'}`));
+    console.log();
+  });
+
+program
+  .command('monitor-add <url>')
+  .description('Agregar URL al monitor')
+  .action((url) => {
+    const monitor = new Monitor();
+    if (monitor.addUrl(url)) {
+      console.log(chalk.green(`✓ URL agregada: ${url}`));
+    } else {
+      console.log(chalk.yellow(`URL ya existe: ${url}`));
+    }
+  });
+
+program
+  .command('monitor-remove <url>')
+  .description('Quitar URL del monitor')
+  .action((url) => {
+    const monitor = new Monitor();
+    if (monitor.removeUrl(url)) {
+      console.log(chalk.green(`✓ URL removida: ${url}`));
+    } else {
+      console.log(chalk.yellow(`URL no encontrada: ${url}`));
     }
   });
 

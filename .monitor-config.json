@@ -1,0 +1,18 @@
+{
+  "urls": [
+    "https://www.horneross.com/",
+    "https://app.horneross.com/"
+  ],
+  "teamId": "fbf53a57-5d9f-4ac7-b9dc-05649108f95c",
+  "assigneeId": "09375327-6e18-4035-ac85-233f290392bb",
+  "checks": {
+    "httpStatus": true,
+    "responseTime": true,
+    "sslExpiry": true,
+    "jsErrors": false
+  },
+  "thresholds": {
+    "responseTime": 5000,
+    "sslExpiryDays": 14
+  }
+}
